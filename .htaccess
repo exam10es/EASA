@@ -1,0 +1,170 @@
+# Examination Website .htaccess Configuration
+
+# Enable rewrite engine
+RewriteEngine On
+
+# Set base directory
+RewriteBase /
+
+# Prevent directory listing
+Options -Indexes
+
+# Set default character set
+AddDefaultCharset UTF-8
+
+# GZIP Compression
+<IfModule mod_deflate.c>
+    # Compress HTML, CSS, JavaScript, Text, XML and fonts
+    AddOutputFilterByType DEFLATE application/javascript
+    AddOutputFilterByType DEFLATE application/rss+xml
+    AddOutputFilterByType DEFLATE application/vnd.ms-fontobject
+    AddOutputFilterByType DEFLATE application/x-font
+    AddOutputFilterByType DEFLATE application/x-font-opentype
+    AddOutputFilterByType DEFLATE application/x-font-otf
+    AddOutputFilterByType DEFLATE application/x-font-truetype
+    AddOutputFilterByType DEFLATE application/x-font-ttf
+    AddOutputFilterByType DEFLATE application/x-javascript
+    AddOutputFilterByType DEFLATE application/xhtml+xml
+    AddOutputFilterByType DEFLATE application/xml
+    AddOutputFilterByType DEFLATE font/opentype
+    AddOutputFilterByType DEFLATE font/otf
+    AddOutputFilterByType DEFLATE font/ttf
+    AddOutputFilterByType DEFLATE image/svg+xml
+    AddOutputFilterByType DEFLATE image/x-icon
+    AddOutputFilterByType DEFLATE text/css
+    AddOutputFilterByType DEFLATE text/html
+    AddOutputFilterByType DEFLATE text/javascript
+    AddOutputFilterByType DEFLATE text/plain
+    AddOutputFilterByType DEFLATE text/xml
+    
+    # Remove browser bugs (only needed for old browsers)
+    BrowserMatch ^Mozilla/4 gzip-only-text/html
+    BrowserMatch ^Mozilla/4\.0[678] no-gzip
+    BrowserMatch \bMSIE !no-gzip !gzip-only-text/html
+    Header append Vary User-Agent
+</IfModule>
+
+# Browser Caching
+<IfModule mod_expires.c>
+    ExpiresActive on
+    
+    # Images
+    ExpiresByType image/jpg "access plus 1 month"
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/gif "access plus 1 month"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/webp "access plus 1 month"
+    ExpiresByType image/svg+xml "access plus 1 month"
+    ExpiresByType image/x-icon "access plus 1 year"
+    
+    # CSS and JavaScript
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    ExpiresByType text/javascript "access plus 1 month"
+    
+    # Fonts
+    ExpiresByType font/ttf "access plus 1 year"
+    ExpiresByType font/otf "access plus 1 year"
+    ExpiresByType font/woff "access plus 1 year"
+    ExpiresByType font/woff2 "access plus 1 year"
+    ExpiresByType application/font-woff "access plus 1 year"
+    
+    # HTML
+    ExpiresByType text/html "access plus 1 week"
+    
+    # Default
+    ExpiresDefault "access plus 1 week"
+</IfModule>
+
+# Security Headers
+<IfModule mod_headers.c>
+    # X-Frame-Options
+    Header always set X-Frame-Options DENY
+    
+    # X-Content-Type-Options
+    Header always set X-Content-Type-Options nosniff
+    
+    # X-XSS-Protection
+    Header always set X-XSS-Protection "1; mode=block"
+    
+    # Strict-Transport-Security (HTTPS only)
+    # Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    
+    # Content Security Policy
+    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' cdnjs.cloudflare.com cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' cdnjs.cloudflare.com fonts.googleapis.com; font-src 'self' fonts.gstatic.com cdnjs.cloudflare.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none';"
+    
+    # Referrer Policy
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# Redirect HTTP to HTTPS (uncomment if SSL is available)
+# RewriteCond %{HTTPS} off
+# RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Remove .php extension
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}\.php -f
+RewriteRule ^(.*)$ $1.php [L]
+
+# Pretty URLs for public pages
+RewriteRule ^major/([0-9]+)/?$ public/major.php?id=$1 [L]
+RewriteRule ^material/([0-9]+)/?$ public/material.php?id=$1 [L]
+RewriteRule ^exam/([0-9]+)/?$ public/exam.php?chapter_id=$1 [L]
+RewriteRule ^results/([0-9]+)/?$ public/results.php?id=$1 [L]
+
+# Admin pretty URLs
+RewriteRule ^admin/majors/?$ admin/majors/index.php [L]
+RewriteRule ^admin/materials/?$ admin/materials/index.php [L]
+RewriteRule ^admin/chapters/?$ admin/chapters/index.php [L]
+RewriteRule ^admin/questions/?$ admin/questions/index.php [L]
+RewriteRule ^admin/results/?$ admin/results/index.php [L]
+
+# Block access to sensitive files
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
+<FilesMatch "\.(sql|log|bak|backup|tmp)$">
+    Require all denied
+</FilesMatch>
+
+# Block access to config files
+<Files "config/database.php">
+    Require all denied
+</Files>
+
+<Files "config/constants.php">
+    Require all denied
+</Files>
+
+<Files "database_schema.sql">
+    Require all denied
+</Files>
+
+# Allow access to installation file only if not installed
+<Files "installation.php">
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteCond %{REQUEST_FILENAME} installed.lock -f
+    RewriteRule ^(.*)$ - [F,L]
+</Files>
+
+# Prevent access to .htaccess and .htpasswd files
+<FilesMatch "^\.ht">
+    Require all denied
+</FilesMatch>
+
+# Set server signature
+ServerSignature Off
+
+# PHP Settings
+php_flag display_errors Off
+php_flag display_startup_errors Off
+php_flag log_errors On
+php_flag log_errors_max_len 1024
+php_value error_log logs/php_errors.log
+
+# File upload limits
+php_value upload_max_filesize 2M
+php_value post_max_size 2M
+php_value max_execution_time 300
+php_value max_input_time 300
